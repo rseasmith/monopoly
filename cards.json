@@ -1,0 +1,14 @@
+{
+  "text": "Advance to Go",
+  "type": "chance/communityChest",
+  "collect": "50",
+  "collectEachPlayer": "10",
+  "pay": "50",
+  "payEachPlayer": "50",
+  "getOutOfJailFree": "false",
+  "goBackThree": "false",
+  "goToTile": "Go, Illinois Ave., St. Charles Place, Reading Railroad, Boardwalk",
+  "goToType": "utility, railroad",
+  "goToJail": "false",
+  "makeRepairs": "25, 100 house/hotel"
+}
