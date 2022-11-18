@@ -1,14 +1,15 @@
 require './dice'
 
 class Player
-  attr_reader :name, :rolls
+  attr_reader :name, :last_roll, :rolls
   attr_writer :in_jail
   attr_accessor :space, :turns_in_jail
 
-  def initialize(name, tile)
+  def initialize(name)
     @name = name
     @space = 0
     @dice = Dice.new
+    @last_roll = []
     @rolls = []
     @turns_in_jail = 0
   end
@@ -16,7 +17,8 @@ class Player
   # :rolls is ordered from oldest->newest with newest at the end
   def roll
     roll = @dice.roll
-    @rolls.push([@dice.first, @dice.second])
+    @last_roll = [@dice.first, @dice.second]
+    @rolls.push(@last_roll)
     if @rolls.size > 3
       @rolls.shift
     end

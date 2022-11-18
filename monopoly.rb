@@ -1,19 +1,20 @@
+require 'logger'
 require 'json'
 require './player'
 
 BOARD_JSON = './tiles.json'
 CARDS_JSON = './cards.json'
-
-DEBUG = false
+LOGGER_LEVEL = Logger::DEBUG # UNKNOWN/FATAL/ERROR/WARN/INFO/DEBUG
+NUM_TURNS = 10
 
 class Monopoly
-  attr_reader :board, :board_count
-
   def initialize
     @players = []
     @test = []
     @doubles = 0
     @rolls = 0
+    File.delete("log.out")
+    @logger = Logger.new('log.out', File::WRONLY)
     load_board
   end
 
@@ -26,16 +27,20 @@ class Monopoly
   end
 
   def play_game
-    @players.each do |player|
-      take_turn(player)
+    for i in 1..NUM_TURNS do
+      @players.each do |player|
+        take_turn(player)
+      end
     end
   end
 
-  def debug_rolls(player)
-    for i in 1..10000 do
-      take_turn(player)
+  def summarize
+    puts "Final game summary:"
+    puts "\tRolls: " + @rolls.to_s
+    puts "\tDoubles: " + @doubles.to_s
+    for i in 0..(@board_count.size-1)
+      puts "\t" + get_space(i) + ": " + @board_count[i].to_s
     end
-    summarize
   end
 
   private
@@ -47,6 +52,7 @@ class Monopoly
 
   def load_tiles
     #TODO: Make this read/load the json file with all the board info
+    @logger.debug("Loading board...")
     @board = []
     @board.push("Go")
     @board.push("Mediterranean Avenue")
@@ -119,17 +125,20 @@ class Monopoly
   def take_turn(player)
     roll = player.roll
     @rolls += 1
-    if DEBUG
-      puts "Player rolled: " + roll.to_s
-    end
+    @logger.debug(player.name + ": Rolled " + player.last_roll.to_s)
 
     was_in_jail = player.in_jail?
     if player.in_jail?
-      #puts "In jail. Turn " + player.turns_in_jail.to_s + ". Roll: " + player.rolls.to_s
-      if player.turns_in_jail == 3 || player.doubles?
-        #puts "Got out of jail!"
+      @logger.debug(player.name + ": In jail. Turn " + player.turns_in_jail.to_s + ". Roll: " + player.last_roll.to_s)
+      if player.doubles?
+        @logger.debug(player.name + ": Rolled doubles " + player.last_roll.to_s + " and got out of jail.")
+        player.turns_in_jail = 0
+      elsif player.turns_in_jail == 3
+        # Pay $50
+        @logger.debug(player.name + ": Third turn in jail. Released.")
         player.turns_in_jail = 0
       else
+        player.turns_in_jail += 1
         return
       end
     end
@@ -142,16 +151,12 @@ class Monopoly
     end
 
     move_player(player, roll)
-    if DEBUG
-      old = player.space
-      puts "Moving from " + get_space(old) + " to space " + get_space(player.space).to_s
-    end
 
     @board_count[player.space] += 1 # Increment count wherever the player ends their turn
 
     if player.doubles? && !player.in_jail? && !was_in_jail
       @doubles += 1
-      #puts "Doubles! " + player.rolls.to_s + ". Go again!"
+      @logger.debug(player.name + ": Doubles! " + player.last_roll.to_s + ". Go again!")
       take_turn(player)
     end
   end
@@ -159,8 +164,10 @@ class Monopoly
   def move_player(player, roll)
     new_space = player.space + roll
     if new_space >= @board.size
-      #puts "Pass Go! Collect $200"
+      #@logger.debug(player.name + ": " + "Pass Go! Collect $200")
     end
+
+    @logger.debug(player.name + ": " + "Moving from " + get_space(player.space) + " to " + get_space(new_space % @board.size).to_s)
 
     if new_space == get_go_to_jail()
       go_to_jail(player)
@@ -171,25 +178,20 @@ class Monopoly
   end
 
   def go_to_jail(player)
-    #puts "clearing rolls: " + player.rolls.to_s
+    @logger.debug(player.name + ": " + "Sent to Jail")
     player.rolls.clear()
     player.space = get_jail
     player.turns_in_jail += 1
-    #puts "Player is in " + get_space(player.space)
-  end
-
-  def summarize
-    puts "Final game summary:"
-    puts "\tRolls: " + @rolls.to_s
-    puts "\tDoubles: " + @doubles.to_s
-    for i in 0..(@board_count.size-1)
-      puts "\t" + get_space(i) + ": " + @board_count[i].to_s
-    end
   end
 end
 
 
-player = Player.new("Player 1", "yo")
+player1 = Player.new("Player 1")
+player2 = Player.new("Player 2")
+player3 = Player.new("Player 3")
 game = Monopoly.new
-game.add_player(player)
-game.debug_rolls(player)
+game.add_player(player1)
+game.add_player(player2)
+game.add_player(player3)
+game.play_game()
+game.summarize()
