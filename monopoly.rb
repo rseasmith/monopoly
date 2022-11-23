@@ -1,8 +1,10 @@
 require 'logger'
 require 'json'
-require './player'
 
-BOARD_JSON = './tiles.json'
+require_relative 'player'
+require_relative 'spaces'
+
+SPACES_JSON = './spaces.json'
 CARDS_JSON = './cards.json'
 LOGGER_LEVEL = Logger::DEBUG # UNKNOWN/FATAL/ERROR/WARN/INFO/DEBUG
 NUM_TURNS = 10
@@ -185,13 +187,16 @@ class Monopoly
   end
 end
 
+#player1 = Player.new("Player 1")
+#player2 = Player.new("Player 2")
+#player3 = Player.new("Player 3")
+#game = Monopoly.new
+#game.add_player(player1)
+#game.add_player(player2)
+#game.add_player(player3)
+#game.play_game()
+#game.summarize()
 
-player1 = Player.new("Player 1")
-player2 = Player.new("Player 2")
-player3 = Player.new("Player 3")
-game = Monopoly.new
-game.add_player(player1)
-game.add_player(player2)
-game.add_player(player3)
-game.play_game()
-game.summarize()
+json = File.read(CARDS_JSON)
+obj = JSON.parse(json)
+puts obj.to_s

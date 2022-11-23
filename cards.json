@@ -1,14 +1,48 @@
 {
-  "text": "Advance to Go",
-  "type": "chance/communityChest",
-  "collect": "50",
-  "collectEachPlayer": "10",
-  "pay": "50",
-  "payEachPlayer": "50",
-  "getOutOfJailFree": "false",
-  "goBackThree": "false",
-  "goToTile": "Go, Illinois Ave., St. Charles Place, Reading Railroad, Boardwalk",
-  "goToType": "utility, railroad",
-  "goToJail": "false",
-  "makeRepairs": "25, 100 house/hotel"
+  "cards": [
+    {
+      "chance": [
+        {
+          "text": "Your building and loan matures. Collect $150",
+          "collect": "150"
+        },
+        {
+          "text": "Advance token to nearest utility. If UNOWNED you may buy it from the bank. If OWNED, throw dice and pay owner a total ten times the amount thrown",
+          "advanceToType": "utility",
+          "multiplier": 10
+        },
+        {
+          "text": "Advance to Illinois Ave.",
+          "advanceToSpace": "Illinois Ave."
+        },
+        {
+          "text": "Advance to Go",
+          "advanceToSpace": "Go, Illinois Ave., St. Charles Place, Reading Railroad, Boardwalk",
+          "advanceToType": "utility, railroad",
+          "collect": 50,
+          "getOutOfJailFree": "false",
+          "goBackThree": "false",
+          "goToJail": "false",
+          "pay": 50,
+          "payEachPlayer": 50,
+          "makeRepairs": [25, 100],
+          "multiplier": 10
+        }
+      ]
+    },
+    {
+      "communityChest": [
+        {
+          "text": "Advance to Go",
+          "advanceToSpace": "Go",
+          "collect": 50,
+          "collectEachPlayer": 10,
+          "getOutOfJailFree": "false",
+          "goToJail": "false",
+          "makeRepairs": [40, 115],
+          "pay": 50
+        }
+      ]
+    }
+  ]
 }
