@@ -4,20 +4,26 @@ class Card
   def initialize(text)
     @text = text
   end
-
-  def handle_event(player)
-    puts "Throw an error?"
-  end
 end
 
 class Chance < Card
   def initialize(text, event)
     super(text)
+    @event = event
+  end
+
+  def handle_event(player)
+    @event.handle_event(player)
   end
 end
 
 class CommunityChest < Card
   def initialize(text, event)
     super(text)
+    @event = event
+  end
+
+  def handle_event(player)
+    @event.handle_event(player)
   end
 end

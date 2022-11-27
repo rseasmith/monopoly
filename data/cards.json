@@ -1,0 +1,126 @@
+{
+  "cards": [
+    {
+      "chance": [
+        {
+          "text": "Your building and loan matures. Collect $150.",
+          "collect": "150"
+        },
+        {
+          "text": "Advance token to nearest utility. If UNOWNED you may buy it from the bank. If OWNED, throw dice and pay owner a total ten times the amount thrown.",
+          "advanceToType": "utility",
+          "multiplier": 10
+        },
+        {
+          "text": "Advance token to nearest Railroad and pay owner Twice the Rental to which he is otherwise entitled. If Railroad is unowned, you may buy it from the bank.",
+          "advanceToType": "railroad",
+          "multiplier": 2
+        },
+        {
+          "text": "Advance to Illinois Ave.",
+          "advanceToSpace": "Illinois Ave."
+        },
+        {
+          "text": "Take a ride on the Reading. If you pass go collect $200.",
+          "advanceToSpace": "Reading Railroad"
+        },
+        {
+          "text": "Advance to St. Charles Place. If you pass go collect $200.",
+          "advanceToSpace": "St. Charles Place"
+        },
+        {
+          "text": "Take a walk on the Board Walk. Advance token to Board Walk.",
+          "advanceToSpace": "Boardwalk"
+        },
+        {
+          "text": "Pay poor tax of $15",
+          "pay": 15
+        },
+        {
+          "text": "Get out of jail free. This card may be kept until needed or sold.",
+          "getOutOfJailFree": "true"
+        },
+        {
+          "text": "Go directly to jail. Do not pass go, do not collect $200",
+          "goToJail": "true"
+        },
+        {
+          "text": "Advance to go. Collect $200",
+          "advanceToSpace": "Go"
+        },
+        {
+          "text": "Go back 3 spaces",
+          "goBackThree": "true"
+        },
+        {
+          "text": "Bank pays you dividend of $50",
+          "collect": 50
+        },
+        {
+          "text": "You have been elected Chairman of the Board. Pay each player $50.",
+          "payEachPlayer": 50,
+        }
+      ]
+    },
+    {
+      "communityChest": [
+        {
+          "text": "Go to Jail. Go directly to Jail. Do not pass go. Do not collect $200.",
+          "goToJail": "true"
+        },
+        {
+          "text": "Get out of jail free. This card may be kept until needed or sold.",
+          "getOutOfJailFree": "true"
+        },
+        {
+          "text": "You are assessed for street repairs. $40 per house. $115 per hotel.",
+          "makeRepairs": [40, 115]
+        },
+        {
+          "text": "From the sale of stock you get $45.",
+          "collect": 45
+        },
+        {
+          "text": "Pay school tax of $150.",
+          "pay": 150
+        },
+        {
+          "text": "Income tax refund. Collect $20.",
+          "collect": 20
+        },
+        {
+          "text": "You have won Second Prize in a Beauty Contest. Collect $10.",
+          "collect": 10
+        },
+        {
+          "text": "Life insurance matures. Collect $100.",
+          "collect": 100
+        },
+        {
+          "text": "Receive for services $25.",
+          "collect": 25
+        },
+        {
+          "text": "Grand Opera Opening. Collect $50 from every player for opening night seats.",
+          "collectEachPlayer": 50
+        },
+        {
+          "text": "Bank error in your favor. Collect $200.",
+          "collect": 200
+        },
+        {
+          "text": "Advance to go. Collect $200",
+          "advanceToSpace": "Go"
+        },
+        {
+          "text": "Pay hospital $100.",
+          "pay": 100
+        },
+        {
+          "text": "Doctor's Fee. Pay $50.",
+          "pay": 50
+        }
+      ]
+    }
+  ]
+}

@@ -2,10 +2,6 @@ class Event
   def initialize
     @multiplier = 1
   end
-
-  def handle_event(player)
-    puts "Throw an error if this hasn't been overridden"
-  end
 end
 
 class AdvanceToSpace < Event
@@ -18,6 +14,9 @@ end
 
 class AdvanceToType < Event
   def initialize(type, multiplier)
+  end
+  
+  def handle_event(player)
   end
 end
 

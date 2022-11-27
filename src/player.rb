@@ -1,4 +1,4 @@
-require './dice'
+require_relative 'dice'
 
 class Player
   attr_reader :name, :last_roll, :rolls
@@ -49,6 +49,8 @@ class Player
     end
   end
 
+  # @turns_in_jail is incremented at the end of each roll starting with the roll that sent you to jail
+  # i.e., checking this value tells you if this is your first, second, or third turn in jail
   def in_jail?
     return @turns_in_jail > 0
   end
