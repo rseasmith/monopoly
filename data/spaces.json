@@ -16,9 +16,9 @@
       "type": "property"
     },
     {
-    "name": "Community Chest",
-    "space": 2,
-    "type": "communityChest"
+      "name": "Community Chest",
+      "space": 2,
+      "type": "communityChest"
     },
     {
       "name": "Baltic Ave.",
@@ -57,9 +57,9 @@
       "type": "property"
     },
     {
-    "name": "Chance",
-    "space": 7,
-    "type": "chance"
+      "name": "Chance",
+      "space": 7,
+      "type": "chance"
     },
     {
       "name": "Vermont Ave.",
@@ -74,7 +74,7 @@
     },
     {
       "name": "Connecticut Ave.",
-      "space": 6,
+      "space": 9,
       "color": "lightBlue",
       "price": 100,
       "rent": [8,40,100,300,450,600],
@@ -153,9 +153,9 @@
       "type": "property"
     },
     {
-    "name": "Community Chest",
-    "space": 17,
-    "type": "communityChest"
+      "name": "Community Chest",
+      "space": 17,
+      "type": "communityChest"
     },
     {
       "name": "Tennessee Ave.",
@@ -195,9 +195,9 @@
       "type": "property"
     },
     {
-    "name": "Chance",
-    "space": 22,
-    "type": "chance"
+      "name": "Chance",
+      "space": 22,
+      "type": "chance"
     },
     {
       "name": "Indiana Ave.",
@@ -298,9 +298,9 @@
       "type": "property"
     },
     {
-    "name": "Chance",
-    "space": 33,
-    "type": "chance"
+      "name": "Chance",
+      "space": 33,
+      "type": "chance"
     },
     {
       "name": "North Carolina Ave.",
@@ -322,9 +322,9 @@
       "type": "railroad"
     },
     {
-    "name": "Chance",
-    "space": 36,
-    "type": "chance"
+      "name": "Chance",
+      "space": 36,
+      "type": "chance"
     },
     {
       "name": "Park Place",

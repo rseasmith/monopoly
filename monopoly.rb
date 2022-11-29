@@ -14,7 +14,8 @@ NUM_TURNS = 1000
 class Monopoly
   def initialize
     @players = []
-    @test = []
+    @spaces = []
+    @space_count = {}
     @total_doubles = 0
     @total_rolls = 0
     if File.file?(LOG_FILE)
@@ -30,7 +31,7 @@ class Monopoly
   end
 
   def get_space(num)
-    return @board[num % @board.size]
+    return @spaces[num % @spaces.size].name
   end
 
   def play_game
@@ -45,8 +46,8 @@ class Monopoly
     puts "Final game summary:"
     puts "\tTotal Rolls: " + @total_rolls.to_s
     puts "\tDoubles: " + @total_doubles.to_s
-    for i in 0..(@board_count.size-1)
-      puts "\t" + get_space(i) + ": " + @board_count[i].to_s
+    @space_count.each do |k,v|
+      puts "\t" + k + ": " + v.to_s
     end
   end
 
@@ -57,60 +58,21 @@ class Monopoly
     load_cards
   end
 
+  # Read in SPACES_JSON and populate @spaces.
+  # Then initialize @space_count, appending "In Jail"
   def load_spaces
     @logger.debug("Loading board...")
     reader = SpaceReader.new(SPACES_JSON)
-    spaces = reader.get_spaces()
-    #TODO: Make this read/load the json file with all the board info
-    @board = []
-    @board.push("Go")
-    @board.push("Mediterranean Avenue")
-    @board.push("Community Chest")
-    @board.push("Baltic Avenue")
-    @board.push("Income Tax")
-    @board.push("Reading Railroad")
-    @board.push("Oriental Avenue")
-    @board.push("Chance")
-    @board.push("Vermont Avenue")
-    @board.push("Connecticut Avenue")
-    @board.push("Jail")
-    @board.push("St. Charles Place")
-    @board.push("Electric Company")
-    @board.push("States Avenue")
-    @board.push("Virginia Avenue")
-    @board.push("Pennsylvania Railroad")
-    @board.push("St. James Place")
-    @board.push("Community Chest")
-    @board.push("Tennessee Avenue")
-    @board.push("New York Place")
-    @board.push("Free Parking")
-    @board.push("Kentucky Avenue")
-    @board.push("Chance")
-    @board.push("Indiana Avenue")
-    @board.push("Illinois Avenue")
-    @board.push("B. & O. Railroad")
-    @board.push("Atlantic Avenue")
-    @board.push("Ventnor Avenue")
-    @board.push("Water Works")
-    @board.push("Marvin Gardens")
-    @board.push("Go To Jail")
-    @board.push("Pacific Avenue")
-    @board.push("North Carolina Avenue")
-    @board.push("Community Chest")
-    @board.push("Pennsylvania Avenue")
-    @board.push("Short Line")
-    @board.push("Chance")
-    @board.push("Park Place")
-    @board.push("Luxury Tax")
-    @board.push("Boardwalk")
-    #puts "board.size = " + @board.size.to_s
+    @spaces = reader.get_spaces()
+    @jail = reader.jail
+    @go_to_jail = reader.go_to_jail
 
-    # Initialize board_count for keeping track of where players land
-    @board_count = Array.new(@board.size, 0)
-
-    #@test[4] = "Four"
-    #@test[10] = "Ten"
-    #puts @test.to_s
+    # Initialize space_count for keeping track of where players land
+    # Add an extra space at the end to keep track of number of turns ended fully in jail (not "Just Visiting")
+    @spaces.each do |space|
+      @space_count[space.name] = 0
+    end
+    @space_count["In Jail"] = 0
   end
 
   def load_cards
@@ -119,11 +81,11 @@ class Monopoly
   end
 
   def get_jail
-    return 10
+    return @jail
   end
 
   def get_go_to_jail
-    return 30
+    return @go_to_jail
   end
 
   # Roll dice
@@ -138,6 +100,7 @@ class Monopoly
     @total_rolls += 1
     @log = player.name + ": Rolled " + player.last_roll.to_s + ". "
 
+    # You can only get out of jail by rolling doubles or paying $50. Assume player only pays $50 after expending all 3 attempts to escape
     was_in_jail = player.in_jail?
     if player.in_jail?
       @log = player.name + ": In jail. Turn " + player.turns_in_jail.to_s + ". Roll: " + player.last_roll.to_s + "."
@@ -145,7 +108,7 @@ class Monopoly
         @log = @log + " Doubles! Got out of jail."
         player.turns_in_jail = 0
       elsif player.turns_in_jail == 3
-        @log = @log + ". Released after paying $50."
+        @log = @log + " Released after paying $50."
         player.turns_in_jail = 0
       else
         player.turns_in_jail += 1
@@ -154,16 +117,18 @@ class Monopoly
       end
     end
 
-    if player.three_doubles?
+    if player.three_doubles? # 3 doubles immediately sends you to jail and ends your turn
       @log = @log + " Three doubles!"
       go_to_jail(player)
       end_turn(player)
       return
     end
 
-    move_player(player, roll)
+    move_player(player, roll) # Barring jail or 3 doubles, move player normally
 
-    if player.doubles? && !player.in_jail? && !was_in_jail
+    handle_card(player) # If the new space is a Chance or Community Chest, grab the next card and handle the event
+
+    if player.doubles? && !player.in_jail? && !was_in_jail # Doubles gets you another turn UNLESS you were just sent to jail or just escaped from jail
       @total_doubles += 1
       @log = @log + " Doubles! Go again."
       end_turn(player)
@@ -173,15 +138,21 @@ class Monopoly
     end
   end
 
+  # Output to the logfile, and keep track of which space the player ended their turn on
   def end_turn(player)
     @logger.debug(@log)
-    @board_count[player.space] += 1 # Increment count wherever the player ends their turn
+    # Increment space_count wherever the player ends their turn
+    if player.in_jail?
+      @space_count["In Jail"] += 1
+    else
+      @space_count[@spaces[player.space].name] += 1
+    end
   end
 
   def move_player(player, roll)
     new_space = player.space + roll
-    @log = @log + " Moving from " + get_space(player.space) + " to " + get_space(new_space % @board.size).to_s + "."
-    if new_space >= @board.size
+    @log = @log + " Moving from " + get_space(player.space) + " to " + get_space(new_space % @spaces.size).to_s + "."
+    if new_space >= @spaces.size
       @log = @log + " Pass Go! Collect $200."
     end
 
@@ -190,15 +161,22 @@ class Monopoly
       return
     end
 
-    player.space = new_space % @board.size
+    player.space = new_space % @spaces.size
   end
 
-  def go_to_jail(player)
-    @log = @log + " Sent to Jail."
+  def handle_card(player)
+    if (@spaces[player.space].is_a?(Chance))
+      @log = @log + " Chance!"
+    elsif (@spaces[player.space].is_a?(CommunityChest))
+      @log = @log + " Community Chest!"
+    end
+  end
+
+  def go_to_jail(player) # Sends player to jail and increments turns_in_jail by 1
+    @log = @log + " Go to Jail."
     player.rolls.clear()
     player.space = get_jail
     player.turns_in_jail += 1
-    @board_count[player.space] += 1 # Increment count wherever the player ends their turn
   end
 end
 
