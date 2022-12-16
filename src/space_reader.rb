@@ -1,5 +1,7 @@
 require 'json'
 
+require_relative 'spaces'
+
 class SpaceReader
   attr_reader :jail, :go_to_jail
   def initialize(file)
@@ -20,28 +22,28 @@ class SpaceReader
       name = space["name"]
       space_num = space["space"]
       if not space.has_key?("type") # No "type" defaults to base class, Space
-        @spaces.push(Space.new(name, space_num))
+        @spaces[space_num] = Space.new(name, space_num)
         next
       end
 
       case space["type"]
       when "property"
-        @spaces.push(Property.new(name, space_num, space["color"], space["price"], space["rent"], space["mortgage"], space["house"], space["hotel"]))
+        @spaces[space_num] = Property.new(name, space_num, space["color"], space["price"], space["rent"], space["mortgage"], space["house"], space["hotel"])
       when "railroad"
-        @spaces.push(Railroad.new(name, space_num, space["price"], space["rent"], space["mortgage"]))
+        @spaces[space_num] = Railroad.new(name, space_num, space["price"], space["rent"], space["mortgage"])
       when "utility"
-        @spaces.push(Utility.new(name, space_num, space["price"], space["rent"], space["mortgage"]))
+        @spaces[space_num] = Utility.new(name, space_num, space["price"], space["rent"], space["mortgage"])
       when "incomeTax"
-        @spaces.push(Tax.new(name, space_num, space["tax"]))
+        @spaces[space_num] = IncomeTax.new(name, space_num, space["tax"])
       when "luxuryTax"
-        @spaces.push(Tax.new(name, space_num, space["tax"]))
+        @spaces[space_num] = LuxuryTax.new(name, space_num, space["tax"])
       when "chance"
-        @spaces.push(Chance.new(space_num))
+        @spaces[space_num] = ChanceSpace.new(space_num)
       when "communityChest"
-        @spaces.push(CommunityChest.new(space_num))
+        @spaces[space_num] = CommunityChestSpace.new(space_num)
       when "goToJail"
         @go_to_jail = space_num
-        @spaces.push(Space.new(name, space_num))
+        @spaces[space_num] = Space.new(name, space_num)
       when "jail"
         @jail = space_num # Actual Jail isn't added in as a space, only the "Just Visiting" type. But, still keep track of which space number it is
       else

@@ -1,5 +1,7 @@
 require 'logger'
 
+require_relative 'src/cards'
+require_relative 'src/card_reader'
 require_relative 'src/player'
 require_relative 'src/space_reader'
 require_relative 'src/spaces'
@@ -7,14 +9,19 @@ require_relative 'src/spaces'
 SPACES_JSON = 'data/spaces.json'
 CARDS_JSON = 'data/cards.json'
 
-LOGGER_LEVEL = Logger::DEBUG # UNKNOWN/FATAL/ERROR/WARN/INFO/DEBUG
+LOGGER_LEVEL = Logger::DEBUG #UNKNOWN/FATAL/ERROR/WARN/INFO/DEBUG
 LOG_FILE = "log.out"
 NUM_TURNS = 1000
 
 class Monopoly
+  attr_reader :jail, :go_to_jail
   def initialize
     @players = []
     @spaces = []
+    @chance = []
+    @chance_discard = []
+    @community_chest = []
+    @community_chest_discard = []
     @space_count = {}
     @total_doubles = 0
     @total_rolls = 0
@@ -30,8 +37,21 @@ class Monopoly
     @players.push(player)
   end
 
-  def get_space(num)
+  # Get the name of the space (e.g. Boardwalk) from a given space number (e.g. 39)
+  def get_space_name(num)
     return @spaces[num % @spaces.size].name
+  end
+
+  # Get the number of the space (e.g. 39) from a given space name (e.g. Boardwalk)
+  def get_space_num(name)
+    @spaces.each_with_index do |space,i|
+      if space.name == name
+        return i
+      end
+    end
+    # Log an error if there's an invalid name request
+    @logger.error("Invalid space name '#{name}' requested in 'get_space_num' function.")
+    return -1
   end
 
   def play_game
@@ -59,33 +79,31 @@ class Monopoly
   end
 
   # Read in SPACES_JSON and populate @spaces.
-  # Then initialize @space_count, appending "In Jail"
+  # Then initialize @space_count with "In Jail" and append @spaces names
   def load_spaces
-    @logger.debug("Loading board...")
+    @logger.debug("Loading spaces from '" + SPACES_JSON + "'...")
     reader = SpaceReader.new(SPACES_JSON)
-    @spaces = reader.get_spaces()
+    @spaces = reader.get_spaces
     @jail = reader.jail
     @go_to_jail = reader.go_to_jail
 
     # Initialize space_count for keeping track of where players land
-    # Add an extra space at the end to keep track of number of turns ended fully in jail (not "Just Visiting")
+    # Since space_count is a hash, prepend the space number to differentiate spaces with the same name (e.g. "Chance")
+    # Add an extra space at the beginning to keep track of number of turns ended fully in jail (not "Just Visiting")
+    @space_count["(-) In Jail"] = 0
     @spaces.each do |space|
-      @space_count[space.name] = 0
+      @space_count["(" + space.space.to_s + ") " + space.name] = 0
     end
-    @space_count["In Jail"] = 0
   end
 
+  # Read in CARDS_JSON, initializing @chance and @community_chest
   def load_cards
-    # Read cards.json, intializing two arrays (chance & community_chest)
-    # Randomize the order of them
-  end
-
-  def get_jail
-    return @jail
-  end
-
-  def get_go_to_jail
-    return @go_to_jail
+    @logger.debug("Loading cards from '" + CARDS_JSON + "'...")
+    reader = CardReader.new(CARDS_JSON)
+    @chance = reader.chance.shuffle
+    @community_chest = reader.community_chest.shuffle
+    #puts "Chance: " + @chance.to_s
+    #puts "Community Chest: " + @community_chest.to_s
   end
 
   # Roll dice
@@ -100,35 +118,34 @@ class Monopoly
     @total_rolls += 1
     @log = player.name + ": Rolled " + player.last_roll.to_s + ". "
 
-    # You can only get out of jail by rolling doubles or paying $50. Assume player only pays $50 after expending all 3 attempts to escape
-    was_in_jail = player.in_jail?
+    was_in_jail = false
+
+    # If player is in jail, try to get out
     if player.in_jail?
-      @log = player.name + ": In jail. Turn " + player.turns_in_jail.to_s + ". Roll: " + player.last_roll.to_s + "."
-      if player.doubles?
-        @log = @log + " Doubles! Got out of jail."
-        player.turns_in_jail = 0
-      elsif player.turns_in_jail == 3
-        @log = @log + " Released after paying $50."
-        player.turns_in_jail = 0
-      else
-        player.turns_in_jail += 1
-        end_turn(player)
+      was_in_jail = true
+      if (!try_to_get_out_of_jail(player)) # Failing to get out of jail ends the player's turn
         return
       end
     end
 
-    if player.three_doubles? # 3 doubles immediately sends you to jail and ends your turn
+    # 3 doubles immediately sends you to jail and ends your turn
+    if player.three_doubles?
       @log = @log + " Three doubles!"
       go_to_jail(player)
       end_turn(player)
       return
     end
 
-    move_player(player, roll) # Barring jail or 3 doubles, move player normally
+    # Barring jail or 3 doubles, move player normally
+    move_player(player, roll)
 
-    handle_card(player) # If the new space is a Chance or Community Chest, grab the next card and handle the event
+    # If the new space is a Chance or Community Chest, grab the next card and handle the event
+    if @spaces[player.space].is_a?(ChanceSpace) or @spaces[player.space].is_a?(CommunityChestSpace)
+      handle_card(player)
+    end
 
-    if player.doubles? && !player.in_jail? && !was_in_jail # Doubles gets you another turn UNLESS you were just sent to jail or just escaped from jail
+    # Doubles gets you another turn UNLESS you were just sent to jail or just escaped from jail
+    if player.doubles? && !player.in_jail? && !was_in_jail
       @total_doubles += 1
       @log = @log + " Doubles! Go again."
       end_turn(player)
@@ -138,44 +155,151 @@ class Monopoly
     end
   end
 
+  # Logic for trying to get player out of jail. Return 'true' if player escapes. False, otherwise
+  def try_to_get_out_of_jail(player)
+    # You can only get out of jail by having a get out of jail free card, rolling doubles, or paying $50.
+    # Assume player
+    # 1) Uses get out of jail if they have it
+    # 2) Tries to roll doubles
+    # 3) Only pays $50 after expending all 3 attempts to escape
+    @log = player.name + ": In jail. Turn " + player.turns_in_jail.to_s + "."
+    if player.get_out_of_jail_free?
+      @log = @log + " Using Get Out of Jail Free card!"
+      card = player.get_out_of_jail.shift
+      if (card.is_a?(ChanceCard))
+        @chance_discard.unshift(card)
+      else
+        @community_chest_discard.unshift(card)
+      end
+      player.turns_in_jail = 0
+      player.rolls.clear
+      return true
+    end
+
+    @log = @log + " Roll: " + player.last_roll.to_s + "."
+    if player.doubles?
+      @log = @log + " Doubles! Got out of jail."
+      player.turns_in_jail = 0
+      player.rolls.clear
+      return true
+    elsif player.turns_in_jail == 3
+      @log = @log + " Released after paying $50."
+      player.turns_in_jail = 0
+      player.rolls.clear
+      return true
+    else
+      @log = @log + " Unsuccessful."
+      player.turns_in_jail += 1
+      end_turn(player)
+      return false
+    end
+  end
+
   # Output to the logfile, and keep track of which space the player ended their turn on
   def end_turn(player)
     @logger.debug(@log)
     # Increment space_count wherever the player ends their turn
     if player.in_jail?
-      @space_count["In Jail"] += 1
+      @space_count["(-) In Jail"] += 1
     else
-      @space_count[@spaces[player.space].name] += 1
+      @space_count["(" + @spaces[player.space].space.to_s + ") " + @spaces[player.space].name] += 1
     end
   end
 
+  # Advance player ahead by amount of roll.
+  # If player passes Go they receive $200. If they land on "Go To Jail" they are sent to jail
   def move_player(player, roll)
     new_space = player.space + roll
-    @log = @log + " Moving from " + get_space(player.space) + " to " + get_space(new_space % @spaces.size).to_s + "."
-    if new_space >= @spaces.size
-      @log = @log + " Pass Go! Collect $200."
-    end
+    @log = @log + " Moving from '" + get_space_name(player.space) + "' to '" + get_space_name(new_space % @spaces.size).to_s + "'."
 
-    if new_space == get_go_to_jail()
+    if new_space == @go_to_jail
       go_to_jail(player)
       return
+    end
+
+    if new_space >= @spaces.size
+      @log = @log + " Pass Go! Collect $200."
     end
 
     player.space = new_space % @spaces.size
   end
 
+  # Handle the logic of the event from a given Chance/Community Chest card
   def handle_card(player)
-    if (@spaces[player.space].is_a?(Chance))
-      @log = @log + " Chance!"
-    elsif (@spaces[player.space].is_a?(CommunityChest))
-      @log = @log + " Community Chest!"
+    card = get_card(player)
+
+    if card == nil
+      @logger.error("Error! '#{player.name}' tried to call 'handle_card' while player was on '#{player.space}'.")
+      return
+    end
+
+    @log = @log + " Drew: " + card.text + "."
+
+    case card.event
+    when AdvanceToType
+      #space = get_nearest_type(type, player.space) # TODO: write this method
+      @log = @log + " Advancing to nearest #{card.event.type}: (not yet tho)"
+    when AdvanceToSpace
+      @log = @log + " Advancing to: " + card.event.space + " (not yet tho)."
+    when Pay
+      @log = @log + " Paying $#{card.event.pay}."
+    when GetOutOfJailFree
+      player.get_out_of_jail.unshift(card)
+      @log = @log + " Get out of jail free card count: #{player.get_out_of_jail.size}."
+      return
+    when GoToJail
+      go_to_jail(player)
+    when GoBackThree
+      move_player(player, -3)
+    when Collect
+      @log = @log + " Collecting $#{card.event.collect}."
+    when PayEachPlayer
+      @log = @log + " Paying each player $#{card.event.pay}."
+    when MakeRepairs
+      @log = @log + " Making repairs: $#{card.event.cost[0]} per house, $#{card.event.cost[0]} per hotel."
+    when CollectEachPlayer
+      @log = @log + " Collecting $#{card.event.collect} from each player."
+    else
+      raise "Invalid type '#{card.event}': " + card.event.to_s
+    end
+
+    if (card.is_a?(ChanceCard))
+      @chance_discard.unshift(card)
+    else
+      @community_chest_discard.unshift(card)
     end
   end
 
-  def go_to_jail(player) # Sends player to jail and increments turns_in_jail by 1
+  def get_card(player)
+    if (@spaces[player.space].is_a?(ChanceSpace))
+      if @chance.empty?
+        @logger.debug("Chance empty. Shuffling...")
+        @chance = @chance_discard.shuffle
+        @chance_discard.clear
+      end
+      return @chance.shift
+    elsif (@spaces[player.space].is_a?(CommunityChestSpace))
+      if @community_chest.empty?
+        @logger.debug("Community Chest empty. Shuffling...")
+        @community_chest = @community_chest_discard.shuffle
+        @community_chest_discard.clear
+      end
+      return @community_chest.shift
+    else
+      return nil
+    end
+  end
+
+  # Get the nearest type (railroad or utility) from a given space
+  def get_nearest_type(type, space)
+
+  end
+
+  # Sends player to jail and increments turns_in_jail by 1
+  def go_to_jail(player)
     @log = @log + " Go to Jail."
-    player.rolls.clear()
-    player.space = get_jail
+    player.rolls.clear
+    player.space = @jail
     player.turns_in_jail += 1
   end
 end
@@ -187,5 +311,7 @@ game = Monopoly.new
 game.add_player(player1)
 game.add_player(player2)
 game.add_player(player3)
-game.play_game()
-game.summarize()
+game.play_game
+game.get_space_num("Boardwalk")
+game.get_space_num("lol")
+game.summarize

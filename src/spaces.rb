@@ -53,20 +53,27 @@ class Utility < Space
   end
 end
 
-class Tax < Space
+class IncomeTax < Space
   def initialize(name, space, tax)
     super(name, space)
     @tax = tax
   end
 end
 
-class Chance < Space
+class LuxuryTax < Space
+  def initialize(name, space, tax)
+    super(name, space)
+    @tax = tax
+  end
+end
+
+class ChanceSpace < Space
   def initialize(space)
     super("Chance", space)
   end
 end
 
-class CommunityChest < Space
+class CommunityChestSpace < Space
   def initialize(space)
     super("Community Chest", space)
   end

@@ -1,29 +1,22 @@
 class Card
-  attr_reader :text
+  attr_reader :text, :event
 
   def initialize(text)
     @text = text
+    @event = nil
   end
 end
 
-class Chance < Card
+class ChanceCard < Card
   def initialize(text, event)
     super(text)
     @event = event
   end
-
-  def handle_event(player)
-    @event.handle_event(player)
-  end
 end
 
-class CommunityChest < Card
+class CommunityChestCard < Card
   def initialize(text, event)
     super(text)
     @event = event
-  end
-
-  def handle_event(player)
-    @event.handle_event(player)
   end
 end

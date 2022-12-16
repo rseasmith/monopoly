@@ -1,61 +1,60 @@
 class Event
-  def initialize
-    @multiplier = 1
-  end
 end
 
 class AdvanceToSpace < Event
+  attr_reader :space
   def initialize(space)
-  end
-
-  def handle_event(player)
+    @space = space
   end
 end
 
 class AdvanceToType < Event
-  def initialize(type, multiplier)
-  end
-  
-  def handle_event(player)
+  attr_reader :type
+  def initialize(type)
+    @type = type
   end
 end
 
 class Collect < Event
-  def handle_event(player)
+  attr_reader :collect
+  def initialize(collect)
+    @collect = collect
   end
 end
 
 class CollectEachPlayer < Event
-  def handle_event(player)
+  attr_reader :collect
+  def initialize(collect)
+    @collect = collect
   end
 end
 
 class GetOutOfJailFree < Event
-  def handle_event(player)
-  end
 end
 
 class GoBackThree < Event
-  def handle_event(player)
-  end
 end
 
 class GoToJail < Event
-  def handle_event(player)
-  end
 end
 
 class Pay < Event
-  def handle_event(player)
+  attr_reader :pay
+  def initialize(pay)
+    @pay = pay
   end
 end
 
 class PayEachPlayer < Event
-  def handle_event(player)
+  attr_reader :pay
+  def initialize(pay)
+    @pay = pay
   end
 end
 
 class MakeRepairs < Event
-  def handle_event(player)
+  attr_reader :cost
+  def initialize(cost)
+    @cost = cost
   end
 end

@@ -3,7 +3,7 @@ require_relative 'dice'
 class Player
   attr_reader :name, :last_roll, :rolls
   attr_writer :in_jail
-  attr_accessor :space, :turns_in_jail
+  attr_accessor :space, :turns_in_jail, :get_out_of_jail
 
   def initialize(name)
     @name = name
@@ -11,10 +11,12 @@ class Player
     @dice = Dice.new
     @last_roll = []
     @rolls = []
+    @get_out_of_jail = []
     @turns_in_jail = 0
   end
 
-  # :rolls is ordered from oldest->newest with newest at the end
+  # @rolls is ordered from oldest->newest with newest at the end, and only the previous 3 rolls are stored.
+  # When the player gets sent to jail or escapes from jail, @rolls is cleared
   def roll
     roll = @dice.roll
     @last_roll = [@dice.first, @dice.second]
@@ -53,5 +55,10 @@ class Player
   # i.e., checking this value tells you if this is your first, second, or third turn in jail
   def in_jail?
     return @turns_in_jail > 0
+  end
+
+  # Determine if a player has a Get Out of Jail Free card
+  def get_out_of_jail_free?
+    return !@get_out_of_jail.empty?
   end
 end
