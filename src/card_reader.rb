@@ -1,6 +1,7 @@
 require 'json'
 
 require_relative 'events'
+require_relative 'spaces'
 
 class CardReader
   attr_reader :chance, :community_chest
@@ -21,7 +22,13 @@ private
 
       case card["event"]
       when "advanceToType"
-        event = AdvanceToType.new(card["type"])
+        if (card["type"] == "railroad")
+          event = AdvanceToType.new(Railroad, card["multiplier"])
+        elsif (card["type"] == "utility")
+          event = AdvanceToType.new(Utility, card["multiplier"])
+        else
+          raise "Invalid type '#{card["type"]}'."
+        end
       when "advanceToSpace"
         event = AdvanceToSpace.new(card["space"])
       when "pay"
@@ -41,7 +48,7 @@ private
       when "collectEachPlayer"
         event = CollectEachPlayer.new(card["collect"])
       else
-        raise "Invalid type '#{card["event"]}' found in '#{@file}'"
+        raise "Invalid type '#{card["event"]}' found in '#{@file}'."
       end
 
       if card["cardType"] == "chance"

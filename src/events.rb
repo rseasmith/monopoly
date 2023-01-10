@@ -9,9 +9,10 @@ class AdvanceToSpace < Event
 end
 
 class AdvanceToType < Event
-  attr_reader :type
-  def initialize(type)
+  attr_reader :type, :multiplier
+  def initialize(type, multiplier)
     @type = type
+    @multiplier = multiplier
   end
 end
 

@@ -57,6 +57,8 @@ class Monopoly
   def play_game
     for i in 1..NUM_TURNS do
       @players.each do |player|
+        @log.clear
+        @log = "\n" + player.name + ":"
         take_turn(player)
       end
     end
@@ -102,8 +104,8 @@ class Monopoly
     reader = CardReader.new(CARDS_JSON)
     @chance = reader.chance.shuffle
     @community_chest = reader.community_chest.shuffle
-    #puts "Chance: " + @chance.to_s
-    #puts "Community Chest: " + @community_chest.to_s
+    # puts "Chance: " + @chance.to_s
+    # puts "Community Chest: " + @community_chest.to_s
   end
 
   # Roll dice
@@ -113,10 +115,9 @@ class Monopoly
   # Handle event (buy property/pay rent/read card)
   # Check if doubles (if so, go again unless you were in jail)
   def take_turn(player)
-    @log.clear
     roll = player.roll
     @total_rolls += 1
-    @log = player.name + ": Rolled " + player.last_roll.to_s + ". "
+    append("Rolled " + player.last_roll.to_s)
 
     was_in_jail = false
 
@@ -130,7 +131,7 @@ class Monopoly
 
     # 3 doubles immediately sends you to jail and ends your turn
     if player.three_doubles?
-      @log = @log + " Three doubles!"
+      append("Three doubles!")
       go_to_jail(player)
       end_turn(player)
       return
@@ -147,7 +148,7 @@ class Monopoly
     # Doubles gets you another turn UNLESS you were just sent to jail or just escaped from jail
     if player.doubles? && !player.in_jail? && !was_in_jail
       @total_doubles += 1
-      @log = @log + " Doubles! Go again."
+      append("Doubles! Go again.")
       end_turn(player)
       take_turn(player)
     else
@@ -162,9 +163,9 @@ class Monopoly
     # 1) Uses get out of jail if they have it
     # 2) Tries to roll doubles
     # 3) Only pays $50 after expending all 3 attempts to escape
-    @log = player.name + ": In jail. Turn " + player.turns_in_jail.to_s + "."
+    append("In jail. Turn " + player.turns_in_jail.to_s)
     if player.get_out_of_jail_free?
-      @log = @log + " Using Get Out of Jail Free card!"
+      append("Using Get Out of Jail Free card!")
       card = player.get_out_of_jail.shift
       if (card.is_a?(ChanceCard))
         @chance_discard.unshift(card)
@@ -176,19 +177,19 @@ class Monopoly
       return true
     end
 
-    @log = @log + " Roll: " + player.last_roll.to_s + "."
+    append("Roll: " + player.last_roll.to_s)
     if player.doubles?
-      @log = @log + " Doubles! Got out of jail."
+      append("Doubles! Got out of jail.")
       player.turns_in_jail = 0
       player.rolls.clear
       return true
     elsif player.turns_in_jail == 3
-      @log = @log + " Released after paying $50."
+      append("Released after paying $50.")
       player.turns_in_jail = 0
       player.rolls.clear
       return true
     else
-      @log = @log + " Unsuccessful."
+      append("Unsuccessful.")
       player.turns_in_jail += 1
       end_turn(player)
       return false
@@ -209,19 +210,19 @@ class Monopoly
   # Advance player ahead by amount of roll.
   # If player passes Go they receive $200. If they land on "Go To Jail" they are sent to jail
   def move_player(player, roll)
-    new_space = player.space + roll
-    @log = @log + " Moving from '" + get_space_name(player.space) + "' to '" + get_space_name(new_space % @spaces.size).to_s + "'."
+    new_space = (player.space + roll) % @spaces.size
+    append("Moving from '" + get_space_name(player.space) + " (#{player.space})' to '" + get_space_name(new_space).to_s + " (#{new_space})'.")
 
     if new_space == @go_to_jail
       go_to_jail(player)
       return
     end
 
-    if new_space >= @spaces.size
-      @log = @log + " Pass Go! Collect $200."
+    if (player.space + roll) >= @spaces.size
+      append("Pass Go! Collect $200.")
     end
 
-    player.space = new_space % @spaces.size
+    player.space = new_space
   end
 
   # Handle the logic of the event from a given Chance/Community Chest card
@@ -233,32 +234,34 @@ class Monopoly
       return
     end
 
-    @log = @log + " Drew: " + card.text + "."
+    append("Drew: " + card.text)
 
     case card.event
     when AdvanceToType
-      #space = get_nearest_type(type, player.space) # TODO: write this method
-      @log = @log + " Advancing to nearest #{card.event.type}: (not yet tho)"
+      space = get_nearest_type(card.event.type, player.space)
+      move_player(player, space)
     when AdvanceToSpace
-      @log = @log + " Advancing to: " + card.event.space + " (not yet tho)."
+      space = get_space_num(card.event.space)
+      move = space + (@spaces.size - player.space)
+      move_player(player, move)
     when Pay
-      @log = @log + " Paying $#{card.event.pay}."
+      append("Paying $#{card.event.pay}.")
     when GetOutOfJailFree
       player.get_out_of_jail.unshift(card)
-      @log = @log + " Get out of jail free card count: #{player.get_out_of_jail.size}."
-      return
+      append("Get out of jail free card count: #{player.get_out_of_jail.size}.")
+      return # Return before discarding as card is kept
     when GoToJail
       go_to_jail(player)
     when GoBackThree
       move_player(player, -3)
     when Collect
-      @log = @log + " Collecting $#{card.event.collect}."
+      append("Collecting $#{card.event.collect}.")
     when PayEachPlayer
-      @log = @log + " Paying each player $#{card.event.pay}."
+      append("Paying each player $#{card.event.pay}.")
     when MakeRepairs
-      @log = @log + " Making repairs: $#{card.event.cost[0]} per house, $#{card.event.cost[0]} per hotel."
+      append("Making repairs: $#{card.event.cost[0]} per house, $#{card.event.cost[0]} per hotel.")
     when CollectEachPlayer
-      @log = @log + " Collecting $#{card.event.collect} from each player."
+      append("Collecting $#{card.event.collect} from each player.")
     else
       raise "Invalid type '#{card.event}': " + card.event.to_s
     end
@@ -290,19 +293,30 @@ class Monopoly
     end
   end
 
-  # Get the nearest type (railroad or utility) from a given space
+  # Get the number of spaces for the nearest type (railroad or utility) from a given space
   def get_nearest_type(type, space)
-
+    for i in 1..@spaces.size do
+      new_space = (i + space) % @spaces.size
+      if (@spaces[new_space].is_a?(type))
+        return i
+      end
+    end
+    raise "Unable to find nearest type: '#{type}'"
   end
 
   # Sends player to jail and increments turns_in_jail by 1
   def go_to_jail(player)
-    @log = @log + " Go to Jail."
+    append("Go to Jail.")
     player.rolls.clear
     player.space = @jail
     player.turns_in_jail += 1
   end
 end
+
+  # For appending to the log
+  def append(text)
+    @log = @log + "\n\t" + text
+  end
 
 player1 = Player.new("Player 1")
 player2 = Player.new("Player 2")
